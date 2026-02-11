@@ -2,48 +2,58 @@ import Container from './UI/Container.tsx';
 import { timer as TimerProps, useTimerContext } from '../store/timer-context.tsx';
 import { useEffect, useRef, useState } from 'react';
 
-
 export default function Timer({ name, duration }: TimerProps) {
-  const [remainingTime, setRemainingTimer] = useState(duration * 1000);
+  const [remainingTime, setRemainingTime] = useState(duration * 1000);
+  const intervalRef = useRef<number | null>(null);
 
-  const interval = useRef<number | null>(null);
+  const { isRunning } = useTimerContext()!;
 
-  const { isRunning } = useTimerContext();
-
-  if (remainingTime <= 0 && interval.current) {
-    clearInterval(interval.current)
-  }
+  // if duration changes (ex: new timer added), keep state consistent
   useEffect(() => {
-    
-    if(isRunning)
-    {
-      const timer = setInterval(() => {
-          setRemainingTimer(p => p - 50);
-        }, 50);
-        interval.current = timer;
-    }
-    else if(!isRunning && interval.current)
-    {
-      clearInterval(interval.current)
+    setRemainingTime(duration * 1000);
+  }, [duration]);
+
+  useEffect(() => {
+    // always clear previous interval
+    if (intervalRef.current !== null) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
     }
 
-    
+    // if not running, do nothing
+    if (!isRunning) return;
 
+    intervalRef.current = window.setInterval(() => {
+      setRemainingTime((prev) => {
+        if (prev <= 0) {
+          // stop at 0
+          if (intervalRef.current !== null) {
+            clearInterval(intervalRef.current);
+            intervalRef.current = null;
+          }
+          return 0;
+        }
+        return prev - 50;
+      });
+    }, 50);
+
+    // cleanup on stop/unmount
     return () => {
-      if (interval.current) clearInterval(interval.current)
-    }
-  }, [])
-
-  const FormattedRemainingTimer = () => {
-    return ((remainingTime / 1000).toFixed(2))
-  }
+      if (intervalRef.current !== null) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    };
+  }, [isRunning]);
 
   return (
     <Container as="article">
       <h2>{name}</h2>
       <p>{duration}</p>
-      <p><progress max={duration * 1000} value={remainingTime} /></p>
-      <p>{FormattedRemainingTimer()}</p>
+      <p>
+        <progress max={duration * 1000} value={remainingTime} />
+      </p>
+      <p>{(remainingTime / 1000).toFixed(2)}</p>
     </Container>
   );
 }
