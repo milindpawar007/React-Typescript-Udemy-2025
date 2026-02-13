@@ -1,9 +1,26 @@
+import { current } from "@reduxjs/toolkit";
+import { userCartDispatch, userCartSelector } from "../store/hooks";
+import { CartItem ,addToCart,removeFromCart} from "../store/cart-slice";
+
 export default function CartItems() {
+  const cartItems= userCartSelector(state=> state.cart.items);
+  const dispatch = userCartDispatch();
+  const handleRemoveFromCart=(id:number)=>{
+dispatch(removeFromCart(id))
+  }
+    const handleAddToCart=(item:CartItem)=>{
+    dispatch(addToCart(item))
+  }
+
+ 
+
+  const totalPrice= cartItems.reduce((val,item)=>val+item.price*item.quantity,0)
+  const formattedTotalPrice= totalPrice.toFixed(2)
   return (
     <div id="cart">
-      <p>No items in cart!</p>
+     {cartItems.length ===0 && <p>No items in cart!</p>} 
 
-      {/* <ul id="cart-items">
+     {cartItems.length >0 && <ul id="cart-items">
           {cartItems.map((item) => {
             const formattedPrice = `$${item.price.toFixed(2)}`;
 
@@ -23,11 +40,11 @@ export default function CartItems() {
               </li>
             );
           })}
-        </ul> */}
+        </ul>}
 
-      {/* <p id="cart-total-price">
+      <p id="cart-total-price">
         Cart Total: <strong>{formattedTotalPrice}</strong>
-      </p> */}
+      </p>
     </div>
   );
 }
